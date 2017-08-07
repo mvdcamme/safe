@@ -12,6 +12,7 @@
 package kr.ac.kaist.safe.interpreter
 
 import edu.rice.cs.plt.tuple.{ Option => JOption }
+import kr.ac.kaist.safe.cfg_builder.StoreObjectAllocSite
 import kr.ac.kaist.safe.concolic._
 import kr.ac.kaist.safe.interpreter.{ InterpreterDebug => ID, InterpreterPredefine => IP }
 import kr.ac.kaist.safe.interpreter.objects._
@@ -20,6 +21,21 @@ import kr.ac.kaist.safe.nodes.ir._
 import kr.ac.kaist.safe.phase.InterpretConfig
 import kr.ac.kaist.safe.util._
 import kr.ac.kaist.safe.util.{ EJSCompletionType => CT, NodeUtil => NU }
+
+object StoreJSObjectAllocSite {
+
+  private var map: Map[JSObject, AllocSite] = Map()
+
+  def addAllocSite(jSObject: JSObject, allocSite: AllocSite): Unit = {
+    println(s"Adding allocSite $allocSite for jsObject $jSObject")
+    map += jSObject -> allocSite
+  }
+
+  def getAllocSite(jSObject: JSObject): Option[AllocSite] = {
+    map.get(jSObject)
+  }
+
+}
 
 class Interpreter(config: InterpretConfig) extends IRWalker {
   /*
@@ -895,7 +911,7 @@ class Interpreter(config: InterpretConfig) extends IRWalker {
           }
 
         // Internal Function Calls
-        case IRInternalCall(info, lhs: IRId, fun: String, args) =>
+        case ic @ IRInternalCall(info, lhs: IRId, fun: String, args) =>
           IS.span = info.span
           fun match {
             case "<>Concolic<>StartConcolic" =>
@@ -1014,6 +1030,7 @@ class Interpreter(config: InterpretConfig) extends IRWalker {
               }
             case "<>Concolic<>ExecuteCondition" => {
               val argHead = args.head
+              val x = StoreJSObjectAllocSite
               val branchTaken = walkExpr(args.head) match {
                 case v: Val => Some(IH.toBoolean(v))
                 case _: JSError => None
@@ -1069,10 +1086,18 @@ class Interpreter(config: InterpretConfig) extends IRWalker {
                   case _ =>
                 }
               }
+              val optionAllocSite = StoreObjectAllocSite.getAllocSite(ic)
+              println(s"allocSite for $ic is $optionAllocSite")
               walkExpr(args.head) match {
                 case v: Val => IH.toObject(v) match {
                   // (H', A, tb), x = l
-                  case o: JSObject => IH.valError2NormalCompletion(IH.putValue(lhs, o, IS.strict))
+                  case o: JSObject =>
+                    optionAllocSite match {
+                      case Some(allocSite) =>
+                        StoreJSObjectAllocSite.addAllocSite(o, allocSite)
+                      case None =>
+                    }
+                    IH.valError2NormalCompletion(IH.putValue(lhs, o, IS.strict))
                   case err: JSError => IS.comp.setThrow(err, info.span)
                 }
                 case err: JSError => IS.comp.setThrow(err, info.span)
@@ -1282,9 +1307,16 @@ class Interpreter(config: InterpretConfig) extends IRWalker {
         /*
        * 11.1.5 Object Initializer
        */
-        case IRObject(info, lhs, members, proto) =>
+        case ir @ IRObject(info, lhs, members, proto) =>
           IS.span = info.span
           val o = IH.newObj()
+          val optionAllocSite = StoreObjectAllocSite.getAllocSite(ir)
+          println(s"In IRObject, got $optionAllocSite for lhs $lhs")
+          optionAllocSite match {
+            case Some(allocSite) =>
+              StoreJSObjectAllocSite.addAllocSite(o, allocSite)
+            case None =>
+          }
           for (member <- members) walkMember(member) match {
             case err: JSError =>
               IS.comp.setThrow(err, info.span); return node

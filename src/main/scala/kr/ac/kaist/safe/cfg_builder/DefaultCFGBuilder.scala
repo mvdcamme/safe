@@ -22,12 +22,34 @@ import kr.ac.kaist.safe.phase.CFGBuildConfig
 import kr.ac.kaist.safe.util.NodeUtil._
 import kr.ac.kaist.safe.util._
 
+object StoreObjectAllocSite {
+
+  private var allocSites: Map[IRNode, AllocSite] = Map()
+
+  def addAllocSite(irNode: IRNode, alloc: AllocSite): Unit = {
+    println(s"Adding $alloc for $irNode")
+    allocSites += irNode -> alloc
+  }
+
+  def getAllocSite(irNode: IRNode): Option[AllocSite] = {
+    allocSites.get(irNode)
+  }
+
+}
+
 // default CFG builder
 class DefaultCFGBuilder(
     ir: IRRoot,
     safeConfig: SafeConfig,
     config: CFGBuildConfig
 ) extends CFGBuilder(ir, safeConfig, config) {
+
+  private def genNewASite(irNode: IRNode): AllocSite = {
+    val allocSite = newASite
+    StoreObjectAllocSite.addAllocSite(irNode, allocSite)
+    allocSite
+  }
+
   ////////////////////////////////////////////////////////////////
   // results
   ////////////////////////////////////////////////////////////////
@@ -233,10 +255,11 @@ class DefaultCFGBuilder(
         tailBlock.createInst(CFGFunExpr(newFunc.ir, _, id2cfgId(lhs), nameOpt, newFunc, asite1, asite2, asiteOpt))
         (List(tailBlock), lmap)
       /* PEI : when proto is not object*/
-      case IRObject(_, lhs, members, proto) =>
+      case ir @ IRObject(_, lhs, members, proto) =>
         val tailBlock: NormalBlock = getTail(blocks, func)
         var protoIdOpt: Option[CFGExpr] = proto.map(p => id2cfgExpr(p))
-        tailBlock.createInst(CFGAlloc(stmt, _, id2cfgId(lhs), protoIdOpt, newASite))
+        val allocSite = genNewASite(ir)
+        tailBlock.createInst(CFGAlloc(stmt, _, id2cfgId(lhs), protoIdOpt, allocSite))
         members.foreach(translateMember(_, tailBlock, lhs))
         (List(tailBlock), lmap.updated(ThrowLabel, (ThrowLabel of lmap) + tailBlock))
       case irTry @ IRTry(_, body, name, catchIR, finIR) =>
@@ -403,7 +426,7 @@ class DefaultCFGBuilder(
           .updated(AfterCatchLabel, (AfterCatchLabel of lmap) + call.afterCatch)
         )
       /* PEI : internal calls */
-      case IRInternalCall(_, lhs, name, args) =>
+      case ic @ IRInternalCall(_, lhs, name, args) =>
         val tailBlock: NormalBlock = getTail(blocks, func)
         val (asite: Option[AllocSite], lm: LabelMap) = name match {
           case INTERNAL_STR_OBJ => (Some(newASite), lmap)
@@ -411,7 +434,9 @@ class DefaultCFGBuilder(
           case INTERNAL_NUM_OBJ => (Some(newASite), lmap)
           case INTERNAL_GET_OWN_PROP => (Some(newASite), lmap)
           case INTERNAL_GET_OWN_PROP_NAMES => (Some(newASite), lmap)
-          case INTERNAL_TO_OBJ => (Some(newASite), lmap.updated(ThrowLabel, (ThrowLabel of lmap) + tailBlock))
+          case INTERNAL_TO_OBJ =>
+            val allocSite = genNewASite(ic)
+            (Some(allocSite), lmap.updated(ThrowLabel, (ThrowLabel of lmap) + tailBlock))
           case INTERNAL_ITER_INIT => (Some(newASite), lmap.updated(ThrowLabel, (ThrowLabel of lmap) + tailBlock))
           case _ => (None, lmap)
         }
@@ -419,13 +444,14 @@ class DefaultCFGBuilder(
         tailBlock.createInst(CFGInternalCall(stmt, _, id2cfgId(lhs), name, argList, asite))
         (List(tailBlock), lm)
       /* PEI : call, after-call */
-      case IRCall(_, lhs, fun, thisB, args) =>
+      case i @ IRCall(_, lhs, fun, thisB, args) =>
         val tailBlock: NormalBlock = getTail(blocks, func)
         val thisId = CFGTempId("<>this<>", PureLocalVar)
         tailBlock.createInst(CFGEnterCode(stmt, _, thisId, id2cfgExpr(thisB)))
         val ref = CFGVarRef(stmt, thisId)
         val f = tailBlock.func
-        val call = f.createCall(CFGCall(stmt, _, id2cfgExpr(fun), ref, id2cfgExpr(args), newASite), id2cfgId(lhs))
+        val allocSite = genNewASite(i)
+        val call = f.createCall(CFGCall(stmt, _, id2cfgExpr(fun), ref, id2cfgExpr(args), allocSite), id2cfgId(lhs))
         cfg.addEdge(tailBlock, call)
 
         (
