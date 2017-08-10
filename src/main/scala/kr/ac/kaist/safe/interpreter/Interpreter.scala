@@ -169,9 +169,17 @@ class Interpreter(config: InterpretConfig) extends IRWalker {
   ////////////////////////////////////////////////////////////////////////////////
 
   def walkId(id: IRId): ValError = try {
-    if (debug > 0) System.out.println("\nIRId " + id.uniqueName + " base=" + IH.lookup(id))
-    if (IH.isUndef(id)) IP.undefV
-    else IH.getBindingValue(IH.lookup(id), id.originalName)
+    val x = StoreObjectAllocSite // TODO MV Debugging, remove x and y
+    val y = StoreJSObjectAllocSite
+    if (debug > 0) {
+      System.out.println("\nIRId " + id.uniqueName + " base=" + IH.lookup(id))
+    }
+    if (IH.isUndef(id)) {
+      IP.undefV
+    }
+    else {
+      IH.getBindingValue(IH.lookup(id), id.originalName)
+    }
   } catch {
     case e: DefaultValueError => return e.err
   }
@@ -1251,7 +1259,7 @@ class Interpreter(config: InterpretConfig) extends IRWalker {
             vs(i) = PVal(IF.makeNumberIR(e.toString, e))
             i += 1
           })
-          for (i <- 0 until vs.size) {
+          for (i <- vs.indices) {
             arr.defineOwnProperty(i.toString, IH.mkDataProp(vs(i), true, true, true), false)
           }
           // (H'', A', tb), x = l
@@ -1346,10 +1354,9 @@ class Interpreter(config: InterpretConfig) extends IRWalker {
       node
     } catch {
       // TODO: Update Span
-      case e: DefaultValueError => {
+      case e: DefaultValueError =>
         IS.comp.setThrow(e.err, IS.span)
         node
-      }
     } finally {
       IS.span = oldSpan
     }
