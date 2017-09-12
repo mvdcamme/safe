@@ -15,6 +15,7 @@ import java.io.{ File, FileWriter }
 
 import kr.ac.kaist.safe.SafeConfig
 import kr.ac.kaist.safe.concolic._
+import kr.ac.kaist.safe.errors.error.RecursiveDepthExceeded
 import kr.ac.kaist.safe.interpreter.objects._
 import kr.ac.kaist.safe.interpreter.{ InterpreterDebug => ID, InterpreterPredefine => IP }
 import kr.ac.kaist.safe.nodes.ir.{ IRFactory => IF, _ }
@@ -137,7 +138,12 @@ class Interpreter(config: InterpretConfig, safeConfig: SafeConfig) extends IRWal
           fw.close()
       }
     } else {
-      walkIRs(irs)
+      try { // TODO MV Use a Try[] instead of a try-catch
+        walkIRs(irs)
+      } catch {
+        case exc: RecursiveDepthExceeded =>
+        case _ =>
+      }
     }
   }
 
@@ -1140,7 +1146,9 @@ class Interpreter(config: InterpretConfig, safeConfig: SafeConfig) extends IRWal
             walkId(fun) match {
               case v: Val => v match {
                 case f: JSFunction =>
-                  if (!SH.checkRecursiveCall(f.code.name.uniqueName, args)) return node
+                  if (!SH.checkRecursiveCall(f.code.name.uniqueName, args)) {
+                    throw RecursiveDepthExceeded(f.className)
+                  }
               }
               case err: JSError =>
             }
