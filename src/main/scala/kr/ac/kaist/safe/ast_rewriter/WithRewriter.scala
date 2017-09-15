@@ -64,7 +64,7 @@ class WithRewriter(program: Program, forTest: Boolean) {
   private lazy val TO_OBJ_FN_DECL =
     FunDecl(
       TO_OBJ_INFO,
-      Functional(TO_OBJ_INFO, List(), List(), TO_OBJ_BODY, TO_OBJ_FN_ID, List(mkId("x")), NU.GENERATED_STR),
+      Functional(TO_OBJ_INFO, List(), List(), TO_OBJ_BODY, TO_OBJ_FN_ID, List(mkId("x")), NU.GENERATED_STR, true),
       false
     )
 
@@ -120,10 +120,10 @@ class WithRewriter(program: Program, forTest: Boolean) {
         )
     }
     def mkFunctional(info: ASTNodeInfo, fds: List[FunDecl], vds: List[VarDecl], name: Id,
-      params: List[Id], bodyS: String, body: SourceElements, env: Env, node: ASTNode): Functional =
+      params: List[Id], bodyS: String, body: SourceElements, env: Env, node: ASTNode, isGlobal: Boolean): Functional =
       Functional(info, fds.map(walk(_, env)),
         vds.map(walk(_, env)),
-        mkBody(fds, vds, name, params, body, env, node), name, params, bodyS)
+        mkBody(fds, vds, name, params, body, env, node), name, params, bodyS, isGlobal)
 
     // walk overloading
     def walk(node: Program, env: Env): Program = node match {
@@ -265,8 +265,8 @@ class WithRewriter(program: Program, forTest: Boolean) {
         ObjectExpr(info, members.map(m => walk(m, env)))
       case Parenthesized(info, expr) =>
         Parenthesized(info, walk(expr, env))
-      case fe @ FunExpr(info, Functional(i, fds, vds, body, name, params, bodyS)) =>
-        FunExpr(info, mkFunctional(i, fds, vds, name, params, bodyS, body, env, fe))
+      case fe @ FunExpr(info, Functional(i, fds, vds, body, name, params, bodyS, isGlobal)) =>
+        FunExpr(info, mkFunctional(i, fds, vds, name, params, bodyS, body, env, fe, isGlobal))
       case Bracket(info, obj, index) =>
         Bracket(info, walk(obj, env), walk(index, env))
       case Dot(info, obj, member) =>
@@ -391,17 +391,17 @@ class WithRewriter(program: Program, forTest: Boolean) {
     }
 
     def walk(node: FunDecl, env: Env): FunDecl = node match {
-      case fd @ FunDecl(info, Functional(i, fds, vds, body, name, params, bodyS), strict) =>
-        FunDecl(info, mkFunctional(i, fds, vds, name, params, bodyS, body, env, fd), strict)
+      case fd @ FunDecl(info, Functional(i, fds, vds, body, name, params, bodyS, isGlobal), strict) =>
+        FunDecl(info, mkFunctional(i, fds, vds, name, params, bodyS, body, env, fd, isGlobal), strict)
     }
 
     def walk(node: Member, env: Env): Member = node match {
       case Field(info, prop, expr) =>
         Field(info, prop, walk(expr, env))
-      case gp @ GetProp(info, prop, Functional(i, fds, vds, body, name, params, bodyS)) =>
-        GetProp(info, prop, mkFunctional(i, fds, vds, name, Nil, bodyS, body, env, gp))
-      case sp @ SetProp(info, prop, Functional(i, fds, vds, body, name, params, bodyS)) =>
-        SetProp(info, prop, mkFunctional(i, fds, vds, name, params, bodyS, body, env, sp))
+      case gp @ GetProp(info, prop, Functional(i, fds, vds, body, name, params, bodyS, isGlobal)) =>
+        GetProp(info, prop, mkFunctional(i, fds, vds, name, Nil, bodyS, body, env, gp, isGlobal))
+      case sp @ SetProp(info, prop, Functional(i, fds, vds, body, name, params, bodyS, isGlobal)) =>
+        SetProp(info, prop, mkFunctional(i, fds, vds, name, params, bodyS, body, env, sp, isGlobal))
     }
 
     def walk(node: SourceElements, env: Env): SourceElements = node match {

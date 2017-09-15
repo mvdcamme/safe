@@ -13,6 +13,7 @@ package kr.ac.kaist.safe.phase
 
 import scala.util.{ Try, Success }
 import kr.ac.kaist.safe.SafeConfig
+import kr.ac.kaist.safe.ast_rewriter.GlobalFunctionFinder
 import kr.ac.kaist.safe.compiler.Translator
 import kr.ac.kaist.safe.nodes.ast.Program
 import kr.ac.kaist.safe.nodes.ir.IRRoot
@@ -29,7 +30,8 @@ case object Compile extends PhaseObj[Program, CompileConfig, IRRoot] {
     config: CompileConfig
   ): Try[IRRoot] = {
     // Translate AST -> IR.
-    val translator = new Translator(program)
+    val globalFunctionsProgram: Program = new GlobalFunctionFinder(program).result
+    val translator = new Translator(globalFunctionsProgram)
     val ir = translator.result
     val excLog = translator.excLog
 

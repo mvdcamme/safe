@@ -47,7 +47,8 @@ case class Functional(
     stmts: SourceElements,
     name: Id,
     params: List[Id],
-    body: String
+    body: String,
+    isGlobal: Boolean
 ) extends ScopeBody(info: ASTNodeInfo, fds: List[FunDecl], vds: List[VarDecl]) {
   override def toString(indent: Int): String = {
     val s: StringBuilder = new StringBuilder

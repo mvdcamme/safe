@@ -211,7 +211,7 @@ object IRGenerator {
     lhs: Option[String],
     target: String
   ): (List[IRStmt], IRExpr) = e match {
-    case FunExpr(info, f @ Functional(_, fds, vds, body, name, params, _)) =>
+    case FunExpr(info, f @ Functional(_, fds, vds, body, name, params, _, _)) =>
       if (name.text.equals("")) {
         dummyFtn(0) match {
           case IRFunctional(ast, fromSource, name, params, args, fds, vds, body) =>

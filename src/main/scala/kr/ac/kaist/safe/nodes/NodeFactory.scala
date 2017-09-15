@@ -34,7 +34,8 @@ object NodeFactory {
       Id(dummyASTInfo, "dummyThis", isWith = false),
       Id(dummyASTInfo, "dummyArguments", isWith = false)
     ),
-    false)
+    false,
+    true)
 
   ////////////////////////////////////////////////////////////////////////////////
   // IR nodes created
@@ -62,9 +63,10 @@ object NodeFactory {
     vds: List[VarDecl],
     body: List[SourceElement],
     params: List[Id],
-    strict: Boolean
+    strict: Boolean,
+    isGlobal: Boolean
   ): Functional =
-    new Functional(info, fds, vds, new SourceElements(info, body, strict), name, params, "")
+    new Functional(info, fds, vds, new SourceElements(info, body, strict), name, params, "", isGlobal)
 
   def makeFunctional(
     info: ASTNodeInfo,
@@ -74,19 +76,21 @@ object NodeFactory {
     body: List[SourceElement],
     params: List[Id],
     strict: Boolean,
-    bodyS: String
+    bodyS: String,
+    isGlobal: Boolean
   ): Functional =
-    new Functional(info, fds, vds, new SourceElements(info, body, strict), name, params, bodyS)
+    new Functional(info, fds, vds, new SourceElements(info, body, strict), name, params, bodyS, isGlobal)
 
   def makeFunDecl(
     span: Span,
     name: Id,
     params: List[Id],
     body: List[SourceElement],
-    strict: Boolean
+    strict: Boolean,
+    isGlobal: Boolean
   ): FunDecl = {
     val info = NU.makeASTNodeInfo(span)
-    val functional = makeEmptyFunctional(info, name, Nil, Nil, body, params, strict)
+    val functional = makeEmptyFunctional(info, name, Nil, Nil, body, params, strict, isGlobal)
     new FunDecl(info, functional, strict)
   }
 
@@ -95,10 +99,11 @@ object NodeFactory {
     name: Id,
     params: List[Id],
     body: List[SourceElement],
-    strict: Boolean
+    strict: Boolean,
+    isGlobal: Boolean
   ): FunExpr = {
     val info = NU.makeASTNodeInfo(span)
-    new FunExpr(info, makeEmptyFunctional(info, name, Nil, Nil, body, params, strict))
+    new FunExpr(info, makeEmptyFunctional(info, name, Nil, Nil, body, params, strict, isGlobal))
   }
 
   def makeExprStmt(span: Span, expr: Expr): ExprStmt =

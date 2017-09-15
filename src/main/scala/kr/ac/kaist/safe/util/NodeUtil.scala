@@ -757,10 +757,10 @@ object NodeUtil {
     }
 
     override def walk(node: Functional): Functional = node match {
-      case Functional(i, fds, vds, SourceElements(info, body, strict), name, params, bodyS) =>
+      case Functional(i, fds, vds, SourceElements(info, body, strict), name, params, bodyS, isGlobal) =>
         Functional(i, fds.map(walk), vds,
           SourceElements(info, simplify(body.map(walk)), strict),
-          name, params, bodyS)
+          name, params, bodyS, isGlobal)
     }
   }
 

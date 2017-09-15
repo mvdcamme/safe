@@ -258,7 +258,7 @@ class Disambiguator(program: Program) {
       }
       inFunctionBody = oldInFunctionBody
       toplevel = oldToplevel
-      Functional(i, newFds, newVds, newBody, name, pairsParams.map { case (_, nid) => nid }, bodyS)
+      Functional(i, newFds, newVds, newBody, name, pairsParams.map { case (_, nid) => nid }, bodyS, toplevel)
     }
 
     override def walk(node: Program): Program = node match {
@@ -281,7 +281,7 @@ class Disambiguator(program: Program) {
     }
 
     override def walk(node: FunDecl): FunDecl = node match {
-      case FunDecl(info, Functional(i, fds, vds, body, name, params, bodyS), strict) =>
+      case FunDecl(info, Functional(i, fds, vds, body, name, params, bodyS, _), strict) =>
         val oldEnv = (env, labEnv)
         val newName = newId(name, getEnvNoCheck(name))
         val result = FunDecl(
@@ -293,7 +293,7 @@ class Disambiguator(program: Program) {
     }
 
     override def walk(node: LHS): LHS = node match {
-      case FunExpr(info, Functional(i, fds, vds, body, name, params, bodyS)) =>
+      case FunExpr(info, Functional(i, fds, vds, body, name, params, bodyS, _)) =>
         val oldEnv = (env, labEnv)
         val oldToplevel = toplevel
         toplevel = false
@@ -329,7 +329,7 @@ class Disambiguator(program: Program) {
     }
 
     override def walk(node: Member): Member = node match {
-      case GetProp(info, prop, Functional(i, fds, vds, body, name, params, bodyS)) =>
+      case GetProp(info, prop, Functional(i, fds, vds, body, name, params, bodyS, _)) =>
         val oldEnv = (env, labEnv)
         val newProp = newPropId(name)
         val newName = newProp.id
@@ -337,7 +337,7 @@ class Disambiguator(program: Program) {
           functional(i, info.span, newName, params, fds, vds, body, bodyS))
         setEnv(oldEnv)
         result
-      case SetProp(info, prop, Functional(i, fds, vds, body, name, params, bodyS)) =>
+      case SetProp(info, prop, Functional(i, fds, vds, body, name, params, bodyS, _)) =>
         val oldEnv = (env, labEnv)
         val newProp = newPropId(name)
         val newName = newProp.id

@@ -239,8 +239,18 @@ class Coverage(
               })
 
               // Compute this object.
-              if (func.isUser)
-                finfo.setCandidate()
+              if (func.isUser) {
+                func.ir match {
+                  case ir: IRFunctional =>
+                    if (ir.ast.isGlobal) {
+                      finfo.setCandidate()
+                    } else {
+                      println(s"SKIPPING FUNCTION ${ir.ast.name.text}, because it's not a global function")
+                    }
+                  case _ =>
+                    println(s"COVERAGE PROBLEM: CFGFunc $func does not have an IRFunctional, but has ${func.ir}")
+                }
+              }
               if (functionName.contains(".")) {
                 val thislset = context.thisBinding.locset
                 val thisObj = computeObject(hn, thislset)

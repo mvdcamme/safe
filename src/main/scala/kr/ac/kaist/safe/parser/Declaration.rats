@@ -99,7 +99,7 @@ FunDecl FunctionDeclaration =
        yyValue = new FunDecl(info,
                              new Functional(info, nilFds, nilVds,
                                             new SourceElements(info, toList(a3._1()), a3._3()),
-                                            a1, ids, a3._2()), false);
+                                            a1, ids, a3._2(), true), false);
      };
 
 /*
@@ -149,5 +149,5 @@ public LHS FunctionExpr =
        yyValue = new FunExpr(info,
                              new Functional(info, nilFds, nilVds,
                                             new SourceElements(info, toList(a3._1()), a3._3()),
-                                            f, ids, a3._2()));
+                                            f, ids, a3._2(), true));
      };

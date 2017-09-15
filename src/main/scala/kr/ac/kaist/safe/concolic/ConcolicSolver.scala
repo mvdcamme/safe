@@ -249,7 +249,7 @@ class ConcolicSolver(coverage: Coverage) {
 
   def assignEmptyObject(arg: Id): List[Stmt] = {
     val name = NF.makeId(dummySpan, "", "")
-    val obj = NF.makeFunExpr(dummySpan, name, List(), List(), false)
+    val obj = NF.makeFunExpr(dummySpan, name, List(), List(), false, true)
     List(assignValue(arg, obj))
   }
 
