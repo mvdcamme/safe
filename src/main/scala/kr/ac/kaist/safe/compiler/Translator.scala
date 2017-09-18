@@ -415,6 +415,11 @@ class Translator(program: Program) {
     case _ => false
   }
 
+  def isConcolicInput(n: Expr): Boolean = n  match {
+    case VarRef(info, Id(_, id, _, _)) => id.equals(NU.CONCOLIC_INPUT_NAME)
+    case _ => false
+  }
+
   private def containsUserId(e: IRExpr): Boolean = e match {
     case IRBin(_, first, _, second) => containsUserId(first) || containsUserId(second)
     case IRUn(_, _, expr) => containsUserId(expr)
@@ -1171,6 +1176,11 @@ class Translator(program: Program) {
           IRIf(e, cond, mkExprS(e, res, newObj),
             Some(mkExprS(e, res, obj)))
         ), res)
+
+    case FunApp(info, fun, List(arg)) if isConcolicInput(fun) =>
+      val newone = freshId(arg, arg.span, "new1")
+      val (ss, r) = walkExpr(arg, env, newone)
+      (ss :+ IRInternalCall(e, res, NU.INTERNAL_CONCOLIC_INPUT, List(r)), res)
 
     case FunApp(_, VarRef(_, Id(_, fun, _, _)), args) if (NU.isInternalCall(fun)) =>
       val newArgs = args.zipWithIndex.map {

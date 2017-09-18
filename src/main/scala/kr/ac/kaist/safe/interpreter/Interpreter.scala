@@ -1098,6 +1098,9 @@ class Interpreter(config: InterpretConfig, safeConfig: SafeConfig) extends IRWal
               IH.valError2NormalCompletion(IH.putValue(lhs, IP.truePV, IS.strict))
             case NU.INTERNAL_GET_TICK_COUNT =>
               IH.valError2NormalCompletion(IH.putValue(lhs, PVal(IH.mkIRNumIR(System.currentTimeMillis())), IS.strict))
+            case NU.INTERNAL_CONCOLIC_INPUT =>
+              // Assign an arbitrary integer to the lhs
+              IH.valError2NormalCompletion(IH.putValue(lhs, PVal(IRVal(EJSNumber("99", 99))), IS.strict))
             case NU.INTERNAL_ITER_INIT => walkExpr(args.head) match {
               // TODO case for null or undefined
               case v: JSObject =>

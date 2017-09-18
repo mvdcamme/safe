@@ -43,6 +43,9 @@ object NodeUtil {
   val INTERNAL_PRINT_IS = "_<>_printIS"
   val INTERNAL_GET_TICK_COUNT = "_<>_getTickCount"
 
+  val CONCOLIC_INPUT_NAME = "concolicInput"
+  val INTERNAL_CONCOLIC_INPUT = internalAPIName(CONCOLIC_INPUT_NAME)
+
   val INTERNAL_SYMBOL = "<>"
   val GLOBAL_PREFIX = "<>Global<>"
   val GENERATED_STR = "<>generated String Literal"
@@ -150,6 +153,7 @@ object NodeUtil {
     INTERNAL_PRINT,
     INTERNAL_PRINT_IS,
     INTERNAL_GET_TICK_COUNT,
+    INTERNAL_CONCOLIC_INPUT,
     INTERNAL_ADD_EVENT_FUNC,
     INTERNAL_CLASS,
     INTERNAL_PRIM_VAL,
