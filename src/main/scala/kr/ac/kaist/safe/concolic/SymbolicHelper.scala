@@ -772,7 +772,7 @@ class SymbolicHelper(I: Interpreter) {
       case None =>
         System.out.println("Concrete value doesn't match given symbolic value")
     }
-    return result
+    result
   }
 
   def isRecursiveCall(f: String): Boolean = coverage.checkTarget(f) && coverage.functions(f).isRecursive

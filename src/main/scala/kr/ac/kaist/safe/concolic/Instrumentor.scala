@@ -11,13 +11,13 @@
 
 package kr.ac.kaist.safe.concolic
 
-import _root_.java.util.{ List => JList }
-import scala.collection.immutable.Map
 import kr.ac.kaist.safe.nodes.ast._
 import kr.ac.kaist.safe.concolic.{ ConcolicNodeUtil => CNU }
+import kr.ac.kaist.safe.interpreter.PVal
 import kr.ac.kaist.safe.nodes.ir._
 import kr.ac.kaist.safe.nodes.ir.{ IRFactory => IF }
 import kr.ac.kaist.safe.util._
+import kr.ac.kaist.safe.util.{ NodeUtil => NU }
 
 /* Instrumented IR statements:
  *   [IRRoot]
@@ -64,6 +64,11 @@ class Instrumentor(program: IRRoot, coverage: Coverage) {
   private def doit: IRRoot = walk(program, IF.dummyIRId(CNU.freshConcolicName("Main"))).asInstanceOf[IRRoot]
 
   val dummyId = IF.dummyIRId(CNU.freshConcolicName("Instrumentor"))
+
+  private def getNewInputValue(inputVar: IRId): IRVal = {
+    val value: PVal = coverage.getInputValue(inputVar)
+    IRVal(value)
+  }
 
   private def storeEnvironment(ast: ASTNode, v: IRId, env: IRId): IRInternalCall =
     IRInternalCall(ast, dummyId, CNU.freshConcolicName("StoreEnvironment"), List(v, env))
@@ -327,6 +332,9 @@ class Instrumentor(program: IRRoot, coverage: Coverage) {
           case id: IRId => IRSeq(ast, List(storeVariable(ast, lhs, id), node.asInstanceOf[IRInternalCall]))
           case _ => node
         }
+        case NU.INTERNAL_CONCOLIC_INPUT =>
+          val newValue = getNewInputValue(lhs)
+          IRExprStmt(ast, lhs, newValue)
         case _ => node
       }
       //node

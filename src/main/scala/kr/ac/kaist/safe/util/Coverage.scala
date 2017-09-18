@@ -57,7 +57,6 @@ class Coverage(
   var inum = 0
   var report: List[SymbolicInfo] = null
   var constraints = List[ConstraintForm]()
-  var target: String = null
 
   // For analysis
   var typing = Analyze
@@ -99,33 +98,6 @@ class Coverage(
     constraints.nonEmpty
   }
   def existCandidate: Boolean = functions.exists({ case (_, finfo) => finfo.isCandidate })
-  def removeTarget(): Unit = {
-    functions.get(target) match {
-      case Some(info) =>
-        // Need to initialize
-        constraints = List[ConstraintForm]()
-        input = Map[String, Id]()
-        info.done()
-      case None =>
-        System.out.println("Target should be function type")
-    }
-    if (functions.nonEmpty) {
-      val filters = functions.filter({ case (_, x) => x.isCandidate })
-      if (filters.nonEmpty) {
-        // Sort because of test file
-        target = filters.keySet.toList.sorted.head
-        functions(target).targeting()
-        //filters.head._2.targeting
-        //target = filters.head._1
-      } else
-        target = null
-    }
-    isFirst = true
-  }
-  def checkTarget(fun: String): Boolean = functions.get(fun) match {
-    case Some(f) => f.isTarget
-    case None => false
-  }
 
   // Using static analysis, store function information.
   def updateFunction(cfgRoot: CFGNode): Unit = {
